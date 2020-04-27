@@ -20,7 +20,9 @@ class Core : public Napi::ObjectWrap<Core> {
   Napi::Value ReadNetwork(const Napi::CallbackInfo& info);
   Napi::Value ReadNetworkFromData(const Napi::CallbackInfo& info);
   Napi::Value LoadNetwork(const Napi::CallbackInfo& info);
-
+  void AddExtension(const Napi::CallbackInfo& info);
+  void SetConfig(const Napi::CallbackInfo& info);
+  
   InferenceEngine::Core actual_;
 };
 

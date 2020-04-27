@@ -7,6 +7,7 @@ var should = chai.should();
 
 const model_path = './models/squeezenet1.1/FP16/squeezenet1.1.xml';
 const weights_path = './models/squeezenet1.1/FP16/squeezenet1.1.bin';
+const cldnn_path = './test/cldnn_global_custom_kernels/cldnn_global_custom_kernels.xml'
 const ie = require('../lib/ie');
 const core = ie.createCore();
 
@@ -52,6 +53,26 @@ describe('Core Test', function() {
     expect(apiVersion.major).to.be.a('number');
     expect(apiVersion).to.have.property('minor');
     expect(apiVersion.minor).to.be.a('number');
+  });
+
+  it('addExtension should throw for wrong number of argument', () => {
+    expect(() => core.addExtension()).to.throw();
+  });
+
+  it('addExtension should throw for wrong type of argument', () => {
+    expect(() => core.addExtension(1)).to.throw();
+  });
+
+  it('setConfig should throw for wrong number of argument', () => {
+    expect(() => core.setConfig()).to.throw();
+  });
+
+  it('setConfig should throw for wrong type of argument', () => {
+    expect(() => core.setConfig(1)).to.throw();
+  });
+
+  it('setConfig should throw for wrong type of argument', () => {
+    expect(() => core.setConfig(cldnn_path));
   });
 
   it('readNetwork should be a function', () => {
