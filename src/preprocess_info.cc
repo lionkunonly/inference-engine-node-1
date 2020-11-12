@@ -218,10 +218,10 @@ Napi::Value PreProcessInfo::GetPreProcessChannel(
     ;
   }
 
-  size_t index = info[0].ToNumber().Int32Value();
+  int index = info[0].ToNumber().Int32Value();
   ie::PreProcessInfo& pre_info = _input_info->getPreProcess();
 
-  size_t number_of_channels = pre_info.getNumberOfChannels();
+  int number_of_channels = pre_info.getNumberOfChannels();
 
   if (number_of_channels == 0) {
     Napi::Error::New(env, "accessing pre-process when nothing was set.")
@@ -300,12 +300,12 @@ void PreProcessInfo::SetPreProcessChannel(const Napi::CallbackInfo& info) {
     return;
   }
 
-  size_t index = info[0].ToNumber().Int32Value();
+  int index = info[0].ToNumber().Int32Value();
   Napi::Object new_channel = info[1].ToObject();
 
   ie::PreProcessInfo& pre_info = _input_info->getPreProcess();
 
-  size_t number_of_channels = pre_info.getNumberOfChannels();
+  int number_of_channels = pre_info.getNumberOfChannels();
 
   if (number_of_channels == 0) {
     Napi::Error::New(env, "accessing pre-process when nothing was set.")

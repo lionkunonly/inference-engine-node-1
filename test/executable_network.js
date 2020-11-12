@@ -99,7 +99,10 @@ describe('ExecutableNetwork Test', function() {
 
   it('Blob.wmap should throw if already mapped', () => {
     const blob = exec_net.createInferRequest().getBlob('data');
-    expect(() => {blob.wmap(); blob.wmap();}).to.throw(TypeError);
+    expect(() => {
+      blob.wmap();
+      blob.wmap();
+    }).to.throw(TypeError);
   });
 
   it('Blob.rwmap should be a function', () => {
@@ -123,7 +126,10 @@ describe('ExecutableNetwork Test', function() {
 
   it('Blob.rwmap should throw if already mapped', () => {
     const blob = exec_net.createInferRequest().getBlob('data');
-    expect(() => {blob.rwmap(); blob.rwmap();}).to.throw(TypeError);
+    expect(() => {
+      blob.rwmap();
+      blob.rwmap();
+    }).to.throw(TypeError);
   });
 
   it('Blob.rmap should be a function', () => {
@@ -147,7 +153,10 @@ describe('ExecutableNetwork Test', function() {
 
   it('Blob.rmap should throw if already mapped', () => {
     const blob = exec_net.createInferRequest().getBlob('prob');
-    expect(() => {blob.rmap(); blob.rmap();}).to.throw(TypeError);
+    expect(() => {
+      blob.rmap();
+      blob.rmap();
+    }).to.throw(TypeError);
   });
 
   it('Blob.size should be a function', () => {
@@ -251,5 +260,32 @@ describe('ExecutableNetwork Test', function() {
           `output data equals to reference data`);
     }
     output_blob.unmap();
+  });
+
+  async function completionCallback(output_info, infer_req) {
+    const output_blob = infer_req.getBlob(output_info);
+    const output_data = new Float32Array(output_blob.rmap());
+    for (let i = 0; i < output_references.length; i++) {
+      assert(
+          almostEqual(output_data[i], output_references[i]),
+          `output data equals to reference data`);
+    }
+    output_blob.unmap();
+  }
+
+  it('Check setCompletionCallback', function(done) {
+    const infer_req = exec_net.createInferRequest();
+    const input_blob = infer_req.getBlob('data');
+    const input_data = new Float32Array(input_blob.wmap());
+    for (let i = 0; i < input_blob.size(); i++) {
+      input_data[i] = i / (input_blob.size() + 1);
+    }
+    input_blob.unmap();
+    infer_req.setCompletionCallback(() => {
+      completionCallback('prob', infer_req)
+          .then(done())
+          .catch(err => done(err));
+    });
+    infer_req.nativeStartAsync();
   });
 });
