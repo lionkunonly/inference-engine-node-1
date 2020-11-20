@@ -1,5 +1,6 @@
 #include "executable_network.h"
 
+#include <sys/time.h>
 #include "infer_request.h"
 #include "network.h"
 
@@ -30,6 +31,8 @@ class LoadNetworkAsyncWorker : public Napi::AsyncWorker {
 
   void Execute() {
     try {
+      std::map<std::string, std::string> config = {
+          {ie::PluginConfigParams::KEY_CPU_THREADS_NUM, "24"}};
       executable_network_ = core_.LoadNetwork(network_, device_name_);
     } catch (const std::exception& error) {
       Napi::AsyncWorker::SetError(error.what());
@@ -65,10 +68,12 @@ Napi::FunctionReference ExecutableNetwork::constructor;
 void ExecutableNetwork::Init(const Napi::Env& env) {
   Napi::HandleScope scope(env);
 
-  Napi::Function func =
-      DefineClass(env, "ExecutableNetwork",
-                  {InstanceMethod("createInferRequest",
-                                  &ExecutableNetwork::CreateInferRequest)});
+  Napi::Function func = DefineClass(
+      env, "ExecutableNetwork",
+      {InstanceMethod("createInferRequest",
+                      &ExecutableNetwork::CreateInferRequest),
+       InstanceMethod("createInferRequestAsync",
+                      &ExecutableNetwork::CreateInferRequestAsync)});
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -96,7 +101,8 @@ Napi::Value ExecutableNetwork::CreateInferRequest(
   }
   try {
     ie::InferRequest infer_request = actual_.CreateInferRequest();
-    return InferRequest::NewInstance(env, infer_request);
+    Napi::Value new_Infer_req = InferRequest::NewInstance(env, infer_request);
+    return new_Infer_req;
   } catch (const std::exception& error) {
     Napi::RangeError::New(env, error.what()).ThrowAsJavaScriptException();
     return env.Null();
@@ -105,6 +111,18 @@ Napi::Value ExecutableNetwork::CreateInferRequest(
         .ThrowAsJavaScriptException();
     return env.Null();
   }
+}
+
+Napi::Value ExecutableNetwork::CreateInferRequestAsync(
+    const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+  if (info.Length() > 0) {
+    deferred.Reject(Napi::TypeError::New(env, "Invalid argument").Value());
+    return deferred.Promise();
+  }
+  InferRequest::NewInstanceAsync(env, actual_, deferred);
+  return deferred.Promise();
 }
 
 }  // namespace ienodejs

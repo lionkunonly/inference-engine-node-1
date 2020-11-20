@@ -12,10 +12,16 @@ class InferRequest : public Napi::ObjectWrap<InferRequest> {
   static void Init(const Napi::Env& env);
   static Napi::Value NewInstance(const Napi::Env& env,
                                  const InferenceEngine::InferRequest& actual);
+  static void NewInstanceAsync(
+      Napi::Env& env,
+      const InferenceEngine::ExecutableNetwork& exec_net,
+      Napi::Promise::Deferred& deferred);
   InferRequest(const Napi::CallbackInfo& info);
 
  private:
+  friend class CreateInferReqAsyncWorker;
   static Napi::FunctionReference constructor;
+
   // APIs
   Napi::Value GetBlob(const Napi::CallbackInfo& info);
   Napi::Value Infer(const Napi::CallbackInfo& info);

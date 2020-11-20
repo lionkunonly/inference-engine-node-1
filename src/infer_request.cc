@@ -46,6 +46,104 @@ class InferAsyncWorker : public Napi::AsyncWorker {
   Napi::Promise::Deferred deferred_;
 };
 
+// class CreateInferReqAsyncWorker : public Napi::AsyncWorker {
+//   public:
+//     CreateInferReqAsyncWorker(const Napi::Env& env,
+//                               const ie::ExecutableNetwork& exec_net,
+//                               Napi::Promise::Deferred& deferred)
+//     : Napi::AsyncWorker(env), executable_network_(exec_net), env_(env),
+//     deferred_(deferred) {}
+
+//     ~CreateInferReqAsyncWorker() {}
+
+//     void Execute() {
+//       try
+//       {
+//         std::cout<<"4"<<std::endl;
+//         infer_req_ = executable_network_.CreateInferRequest();
+//         std::cout<<"5"<<std::endl;
+//       } catch (const std::exception& error) {
+//         Napi::AsyncWorker::SetError(error.what());
+//         return;
+//       } catch (...) {
+//         Napi::AsyncWorker::SetError("Unknown/internal exception happened.");
+//         return;
+//       }
+//       std::cout<<"6"<<std::endl;
+//     }
+
+//     void OnOk() {
+//       // std::cout<<"5.5"<<std::endl;
+//       // Napi::EscapableHandleScope scope(env_);
+//       // Napi::Object obj = InferRequest::constructor.New({});
+//       // std::cout<<"6"<<std::endl;
+//       // InferRequest* infer_req =
+//       //     Napi::ObjectWrap<InferRequest>::Unwrap(obj);
+//       // std::cout<<"7"<<std::endl;
+//       // infer_req->actual_ = infer_req_;
+//       // std::cout<<"8"<<std::endl;
+//       // deferred_.Resolve(scope.Escape(napi_value(obj)).ToObject());
+
+//       std::cout<<"Consturt InferRequest"<<std::endl;
+//       Napi::Value infer_req = InferRequest::NewInstance(env_, infer_req_);
+//       deferred_.Resolve(infer_req);
+
+//     }
+
+//     void OnError(Napi::Error const& error) {  std::cout<<"error"<<std::endl;
+//     deferred_.Reject(error.Value()); }
+
+//   private:
+//     ie::ExecutableNetwork executable_network_;
+//     ie::InferRequest infer_req_;
+//     Napi::Env env_;
+//     Napi::Promise::Deferred deferred_;
+// };
+
+class CreateInferReqAsyncWorker : public Napi::AsyncWorker {
+ public:
+  CreateInferReqAsyncWorker(Napi::Env& env,
+                            const ie::ExecutableNetwork& exec_net,
+                            Napi::Promise::Deferred& deferred)
+      : Napi::AsyncWorker(env),
+        executable_network_(exec_net),
+        env_(env),
+        deferred_(deferred) {}
+
+  ~CreateInferReqAsyncWorker() {}
+
+  void Execute() {
+    try {
+      infer_req_ = executable_network_.CreateInferRequest();
+    } catch (const std::exception& error) {
+      Napi::AsyncWorker::SetError(error.what());
+      return;
+    } catch (...) {
+      Napi::AsyncWorker::SetError("Unknown/internal exception happened.");
+      return;
+    }
+  }
+
+  void OnOK() {
+    // Napi::EscapableHandleScope scope(env_);
+    // Napi::Object obj = ExecutableNetwork::constructor.New({});
+    // ExecutableNetwork* exec_network =
+    //     Napi::ObjectWrap<ExecutableNetwork>::Unwrap(obj);
+    // exec_network->actual_ = executable_network_;
+    // deferred_.Resolve(scope.Escape(napi_value(obj)).ToObject());
+    Napi::Value new_infer_req = InferRequest::NewInstance(env_, infer_req_);
+    deferred_.Resolve(new_infer_req);
+  }
+
+  void OnError(Napi::Error const& error) { deferred_.Reject(error.Value()); }
+
+ private:
+  ie::ExecutableNetwork executable_network_;
+  ie::InferRequest infer_req_;
+  Napi::Env env_;
+  Napi::Promise::Deferred deferred_;
+};
+
 Napi::FunctionReference InferRequest::constructor;
 
 void InferRequest::Init(const Napi::Env& env) {
@@ -76,6 +174,15 @@ Napi::Value InferRequest::NewInstance(const Napi::Env& env,
   infer_Request->actual_ = actual;
 
   return scope.Escape(napi_value(obj)).ToObject();
+}
+
+void InferRequest::NewInstanceAsync(
+    Napi::Env& env,
+    const InferenceEngine::ExecutableNetwork& exec_net,
+    Napi::Promise::Deferred& deferred) {
+  CreateInferReqAsyncWorker* create_infer_req_worker =
+      new CreateInferReqAsyncWorker(env, exec_net, deferred);
+  create_infer_req_worker->Queue();
 }
 
 Napi::Value InferRequest::GetBlob(const Napi::CallbackInfo& info) {
